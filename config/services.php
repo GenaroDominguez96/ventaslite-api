@@ -25,13 +25,14 @@ return [
 
     'ai' => [
         'provider' => env('AI_PROVIDER', 'gemini'),
-        'timeout' => env('AI_TIMEOUT', 60),
-        'max_output_tokens' => env('AI_MAX_OUTPUT_TOKENS', 1200),
+        'timeout' => env('AI_TIMEOUT', 12),
+        'max_output_tokens' => env('AI_MAX_OUTPUT_TOKENS', 800),
     ],
 
     'gemini' => [
         'api_key' => env('GEMINI_API_KEY'),
-        'model' => env('GEMINI_MODEL', 'gemini-3.8-flash'),
+        'model' => env('GEMINI_MODEL', 'gemini-3.5-flash-lite'),
+        'fallback_model' => env('GEMINI_FALLBACK_MODEL', 'gemini-3.8-flash'),
     ],
 
     'openai' => [
