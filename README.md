@@ -92,6 +92,37 @@ La API utiliza Laravel Sanctum con tokens Bearer.
 
 Las respuestas exitosas usan el sobre `success`, `message`, `data` y `meta`. Los intentos fallidos de inicio de sesión se limitan a cinco por combinación de correo e IP durante un minuto.
 
+## Ventas
+
+Todos los endpoints de ventas requieren el encabezado `Authorization: Bearer {token}` obtenido en `POST /api/login`.
+
+| Método | Endpoint | Descripción |
+| --- | --- | --- |
+| GET | `/api/sales` | Listado paginado de 20 registros. |
+| GET | `/api/sales/{id}` | Detalle de venta con productos. |
+| POST | `/api/sales` | Registra una venta y descuenta existencias. |
+| POST | `/api/sales/{id}/cancel` | Cancela una venta (solo admin) y devuelve existencias. |
+
+El listado acepta los filtros opcionales `date_from`, `date_to`, `branch_id`, `seller_id` y `status`. Los filtros de vendedor solo se aplican para administradores: un vendedor siempre queda limitado a sus propias ventas, incluso si envía otro `seller_id`.
+
+Ejemplo de solicitud para registrar una venta:
+
+```json
+{
+  "branch_id": 1,
+  "customer_name": "Cliente de prueba",
+  "payment_method": "efectivo",
+  "items": [
+    { "product_id": 16, "quantity": 2 },
+    { "product_id": 17, "quantity": 1 }
+  ]
+}
+```
+
+El backend obtiene el precio vigente desde el catálogo, valida existencia y estado activo de los productos, calcula subtotal, IVA del 16 % y total, registra el precio unitario histórico y actualiza stock dentro de una transacción. No se acepta el precio enviado por el frontend.
+
+Las cancelaciones se permiten únicamente al administrador. El stock se restaura en la misma transacción que cambia el estatus; una venta ya cancelada no se procesa nuevamente.
+
 ## Configuración CORS
 
 La variable `CORS_ALLOWED_ORIGINS` en `.env` define los orígenes permitidos para el frontend. Por defecto está configurada para Vite en `http://localhost:5173`.
