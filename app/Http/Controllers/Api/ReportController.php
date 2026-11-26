@@ -131,6 +131,7 @@ class ReportController extends Controller
             ->limit(10)
             ->get()
             ->map(function ($product) {
+                $product->units_sold = (int) $product->units_sold;
                 $product->amount_sold = $this->money($product->amount_sold);
 
                 return $product;
@@ -284,6 +285,7 @@ class ReportController extends Controller
             ->orderByDesc('gross_profit')
             ->get()
             ->map(function ($row) {
+                $row->units_sold = (int) $row->units_sold;
                 $row->gross_profit = $this->money($row->gross_profit);
 
                 return $row;
