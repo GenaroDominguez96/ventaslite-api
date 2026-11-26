@@ -2,9 +2,12 @@
 
 namespace App\Services;
 
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
+use Throwable;
 
 class ReportAssistantService
 {
@@ -53,6 +56,13 @@ class ReportAssistantService
             ])
             ->acceptJson()
             ->timeout((int) config('services.ai.timeout', 60))
+            ->retry(
+                2,
+                1500,
+                fn (Throwable $exception, PendingRequest $request): bool =>
+                    $exception instanceof RequestException
+                    && $exception->response->status() === 503
+            )
             ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent", [
                 'systemInstruction' => [
                     'parts' => [['text' => self::INSTRUCTIONS]],
