@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -35,6 +36,30 @@ class CatalogController extends Controller
             'success' => true,
             'message' => 'Categorías consultadas correctamente.',
             'data' => $categories,
+            'meta' => null,
+        ]);
+    }
+
+    public function sellers(Request $request): JsonResponse
+    {
+        if ($request->user()->role !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permiso para consultar el catálogo de vendedores.',
+                'data' => null,
+                'meta' => null,
+            ], 403);
+        }
+
+        $sellers = User::query()
+            ->where('role', 'vendedor')
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Vendedores consultados correctamente.',
+            'data' => $sellers,
             'meta' => null,
         ]);
     }
