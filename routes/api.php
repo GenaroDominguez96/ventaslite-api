@@ -13,6 +13,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/branches', [CatalogController::class, 'branches']);
     Route::get('/categories', [CatalogController::class, 'categories']);
+    Route::get('/sellers', [CatalogController::class, 'sellers']);
     Route::get('/products', [CatalogController::class, 'products']);
 
     Route::get('/sales', [SaleController::class, 'index']);
