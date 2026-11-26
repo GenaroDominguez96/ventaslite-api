@@ -38,7 +38,7 @@ class ReportsTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.sales_total', '232.00')
             ->assertJsonPath('data.sales_count', 1)
-            ->assertJsonPath('data.average_ticket', '232.0000');
+            ->assertJsonPath('data.average_ticket', '232.00');
 
         $this->actingAs($admin, 'sanctum')
             ->getJson('/api/reports/monthly-sales'.$filters)
