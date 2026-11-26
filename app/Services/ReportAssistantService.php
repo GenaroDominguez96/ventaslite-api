@@ -48,9 +48,12 @@ class ReportAssistantService
     private function generateWithGemini(string $apiKey, array $payload): string
     {
         $model = (string) config('services.gemini.model', 'gemini-3.8-flash');
-        $response = Http::acceptJson()
-            ->timeout((int) config('services.ai.timeout', 30))
-            ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}", [
+        $response = Http::withHeaders([
+                'x-goog-api-key' => $apiKey,
+            ])
+            ->acceptJson()
+            ->timeout((int) config('services.ai.timeout', 60))
+            ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent", [
                 'systemInstruction' => [
                     'parts' => [['text' => self::INSTRUCTIONS]],
                 ],
@@ -61,17 +64,24 @@ class ReportAssistantService
                     ]],
                 ]],
                 'generationConfig' => [
-                    'maxOutputTokens' => (int) config('services.ai.max_output_tokens', 650),
-                    'temperature' => 0.3,
+                    'maxOutputTokens' => (int) config('services.ai.max_output_tokens', 1200),
+                    'thinkingConfig' => [
+                        'thinkingLevel' => 'LOW',
+                    ],
                 ],
             ]);
 
         if (! $response->successful()) {
+            $providerMessage = $response->json('error.message', 'No se recibió detalle del proveedor.');
+
             Log::warning('Gemini rechazó la solicitud del asistente de reportes.', [
                 'status' => $response->status(),
+                'provider_message' => $providerMessage,
             ]);
 
-            throw new RuntimeException('Gemini request failed.');
+            throw new RuntimeException(
+                'Gemini respondió HTTP '.$response->status().': '.$providerMessage
+            );
         }
 
         $answer = collect($response->json('candidates', []))
@@ -81,7 +91,17 @@ class ReportAssistantService
             ->implode(PHP_EOL);
 
         if (trim($answer) === '') {
-            throw new RuntimeException('Gemini returned an empty response.');
+            $finishReason = collect($response->json('candidates', []))
+                ->pluck('finishReason')
+                ->filter()
+                ->implode(', ');
+            $blockReason = $response->json('promptFeedback.blockReason');
+
+            throw new RuntimeException(sprintf(
+                'Gemini no devolvió texto. finishReason=%s; blockReason=%s',
+                $finishReason !== '' ? $finishReason : 'sin candidato',
+                $blockReason ?: 'ninguno'
+            ));
         }
 
         return trim($answer);
