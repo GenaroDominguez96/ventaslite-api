@@ -59,7 +59,8 @@ class ReportAssistantService
         }
 
         $models = array_values(array_unique([$primaryModel, $fallbackModel]));
-        $timeout = (int) config('services.ai.timeout', 12);
+        // Es una interacción en pantalla: limitar cada modelo a 12 segundos como máximo.
+        $timeout = min(max((int) config('services.ai.timeout', 12), 1), 12);
 
         foreach ($models as $index => $model) {
             try {
