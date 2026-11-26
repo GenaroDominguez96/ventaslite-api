@@ -56,3 +56,25 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+
+## Autenticación
+
+La API utiliza Laravel Sanctum con tokens Bearer para los clientes SPA/API.
+
+### Endpoints
+
+- `POST /api/login`: valida credenciales y entrega un token.
+- `POST /api/logout`: revoca el token actual.
+- `GET /api/me`: devuelve el usuario autenticado.
+
+Las respuestas exitosas usan el sobre `success`, `message`, `data` y `meta`. Los intentos fallidos de inicio de sesión se limitan a cinco por combinación de correo e IP durante un minuto.
+
+### Usuario administrador de desarrollo
+
+Después de ejecutar las migraciones y seeders:
+
+- Correo: `admin@ventaslite.test`
+- Contraseña: `password`
+
+Estas credenciales son exclusivamente para desarrollo y demostración.
