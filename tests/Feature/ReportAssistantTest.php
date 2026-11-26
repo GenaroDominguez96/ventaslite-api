@@ -111,6 +111,71 @@ class ReportAssistantTest extends TestCase
         );
     }
 
+    public function test_gemini_retries_once_when_provider_returns_http_503(): void
+    {
+        config([
+            'services.ai.provider' => 'gemini',
+            'services.gemini.api_key' => 'test-gemini-key',
+            'services.gemini.model' => 'gemini-3.8-flash',
+        ]);
+
+        Http::fake([
+            'https://generativelanguage.googleapis.com/*' => Http::sequence()
+                ->push([
+                    'error' => ['message' => 'The model is temporarily overloaded.'],
+                ], 503)
+                ->push([
+                    'candidates' => [[
+                        'content' => [
+                            'parts' => [['text' => 'Respuesta después del reintento.']],
+                        ],
+                    ]],
+                ], 200),
+        ]);
+
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin, 'sanctum')
+            ->postJson('/api/reports/assistant', [
+                'question' => '¿Cuánto se vendió?',
+                'date_from' => '2026-05-01',
+                'date_to' => '2026-05-31',
+            ])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.answer', 'Respuesta después del reintento.');
+
+        Http::assertSentCount(2);
+    }
+
+    public function test_gemini_does_not_retry_when_provider_returns_an_error_other_than_503(): void
+    {
+        config([
+            'services.ai.provider' => 'gemini',
+            'services.gemini.api_key' => 'test-gemini-key',
+            'services.gemini.model' => 'gemini-3.8-flash',
+        ]);
+
+        Http::fake([
+            'https://generativelanguage.googleapis.com/*' => Http::response([
+                'error' => ['message' => 'Invalid request.'],
+            ], 500),
+        ]);
+
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin, 'sanctum')
+            ->postJson('/api/reports/assistant', [
+                'question' => '¿Cuánto se vendió?',
+                'date_from' => '2026-05-01',
+                'date_to' => '2026-05-31',
+            ])
+            ->assertStatus(502)
+            ->assertJsonPath('success', false);
+
+        Http::assertSentCount(1);
+    }
+
     public function test_executive_summary_uses_the_selected_report_period(): void
     {
         config([
