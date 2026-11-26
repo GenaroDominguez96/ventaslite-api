@@ -23,7 +23,7 @@ class ReportController extends Controller
         $summary = (clone $current)
             ->selectRaw('COALESCE(SUM(sales.total), 0) AS sales_total')
             ->selectRaw('COUNT(sales.id) AS sales_count')
-            ->selectRaw('COALESCE(AVG(sales.total), 0) AS average_ticket')
+            ->selectRaw('CAST(COALESCE(AVG(sales.total), 0) AS DECIMAL(14,2)) AS average_ticket')
             ->first();
 
         $days = $filters['date_from']->diffInDays($filters['date_to']) + 1;
@@ -35,18 +35,18 @@ class ReportController extends Controller
             ->selectRaw('COALESCE(SUM(sales.total), 0) AS sales_total')
             ->first();
 
-        $currentTotal = (float) $summary->sales_total;
-        $previousTotal = (float) $previous->sales_total;
-        $change = $previousTotal > 0
-            ? (($currentTotal - $previousTotal) / $previousTotal) * 100
-            : ($currentTotal > 0 ? 100 : 0);
+        $currentCents = $this->decimalToCents($summary->sales_total);
+        $previousCents = $this->decimalToCents($previous->sales_total);
+        $change = $previousCents > 0
+            ? (($currentCents - $previousCents) / $previousCents) * 100
+            : ($currentCents > 0 ? 100 : 0);
 
         return $this->success([
-            'sales_total' => $summary->sales_total,
+            'sales_total' => $this->centsToDecimal($currentCents),
             'sales_count' => (int) $summary->sales_count,
-            'average_ticket' => $summary->average_ticket,
+            'average_ticket' => $this->money($summary->average_ticket),
             'change_percentage' => round($change, 2),
-            'previous_sales_total' => $previous->sales_total,
+            'previous_sales_total' => $this->centsToDecimal($previousCents),
         ], 'Indicadores del dashboard consultados correctamente.', $this->filterMeta($filters));
     }
 
@@ -81,7 +81,7 @@ class ReportController extends Controller
             $months[] = [
                 'period' => $key,
                 'label' => ucfirst($cursor->locale('es_MX')->translatedFormat('M y')),
-                'total' => $aggregate?->total ?? '0.00',
+                'total' => $this->money($aggregate?->total ?? '0.00'),
                 'sales_count' => (int) ($aggregate?->sales_count ?? 0),
             ];
 
@@ -129,7 +129,12 @@ class ReportController extends Controller
             ->orderByDesc($by === 'amount' ? 'amount_sold' : 'units_sold')
             ->orderBy('products.name')
             ->limit(10)
-            ->get();
+            ->get()
+            ->map(function ($product) {
+                $product->amount_sold = $this->money($product->amount_sold);
+
+                return $product;
+            });
 
         return $this->success(
             $products,
@@ -154,7 +159,13 @@ class ReportController extends Controller
             ->groupBy('users.id', 'users.name')
             ->orderByDesc('total_sold')
             ->orderBy('users.name')
-            ->get();
+            ->get()
+            ->map(function ($seller) {
+                $seller->total_sold = $this->money($seller->total_sold);
+                $seller->average_ticket = $this->money($seller->average_ticket);
+
+                return $seller;
+            });
 
         return $this->success(
             $ranking,
@@ -208,6 +219,12 @@ class ReportController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
+        $aggregates = $aggregates->map(function ($row) {
+            $row->total = $this->money($row->total);
+
+            return $row;
+        });
+
         $matrix = [];
         foreach ($branches as $branch) {
             $categoryValues = [];
@@ -224,9 +241,9 @@ class ReportController extends Controller
                 'branch_id' => $branch->id,
                 'branch_name' => $branch->name,
                 'categories' => $categoryValues,
-                'total' => $aggregates
+                'total' => $this->centsToDecimal($aggregates
                     ->where('branch_id', $branch->id)
-                    ->sum(fn ($row) => (float) $row->total),
+                    ->sum(fn ($row) => $this->decimalToCents($row->total))),
             ];
         }
 
@@ -263,7 +280,12 @@ class ReportController extends Controller
             ->selectRaw('CAST(SUM((sale_items.unit_price - products.cost) * sale_items.quantity) AS DECIMAL(14,2)) AS gross_profit')
             ->groupBy('categories.id', 'categories.name')
             ->orderByDesc('gross_profit')
-            ->get();
+            ->get()
+            ->map(function ($row) {
+                $row->gross_profit = $this->money($row->gross_profit);
+
+                return $row;
+            });
 
         return $this->success(
             $margins,
@@ -446,6 +468,36 @@ class ReportController extends Controller
         }
 
         return $rows;
+    }
+
+
+    private function money(mixed $amount): string
+    {
+        return $this->centsToDecimal($this->decimalToCents($amount));
+    }
+
+    private function decimalToCents(mixed $amount): int
+    {
+        $value = trim((string) $amount);
+        $negative = str_starts_with($value, '-');
+        $value = ltrim($value, '+-');
+        [$whole, $fraction] = array_pad(explode('.', $value, 2), 2, '');
+        $fraction = str_pad($fraction, 3, '0');
+        $cents = ((int) $whole * 100) + (int) substr($fraction, 0, 2);
+
+        if ((int) $fraction[2] >= 5) {
+            $cents++;
+        }
+
+        return $negative ? -$cents : $cents;
+    }
+
+    private function centsToDecimal(int $cents): string
+    {
+        $sign = $cents < 0 ? '-' : '';
+        $absolute = abs($cents);
+
+        return $sign.intdiv($absolute, 100).'.'.str_pad((string) ($absolute % 100), 2, '0', STR_PAD_LEFT);
     }
 
     private function safeCsvValue(mixed $value): mixed
