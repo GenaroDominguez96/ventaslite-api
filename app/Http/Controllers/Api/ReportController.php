@@ -53,13 +53,20 @@ class ReportController extends Controller
     public function monthlySales(Request $request): JsonResponse
     {
         $filters = $this->validatedFilters($request);
+        $yearExpression = DB::connection()->getDriverName() === 'sqlite'
+            ? "strftime('%Y', sales.sold_at)"
+            : 'YEAR(sales.sold_at)';
+        $monthExpression = DB::connection()->getDriverName() === 'sqlite'
+            ? "CAST(strftime('%m', sales.sold_at) AS INTEGER)"
+            : 'MONTH(sales.sold_at)';
+
         $aggregates = $this->salesQuery($filters, $request)
-            ->selectRaw('YEAR(sales.sold_at) AS year')
-            ->selectRaw('MONTH(sales.sold_at) AS month')
+            ->selectRaw($yearExpression.' AS year')
+            ->selectRaw($monthExpression.' AS month')
             ->selectRaw('COALESCE(SUM(sales.total), 0) AS total')
             ->selectRaw('COUNT(sales.id) AS sales_count')
-            ->groupByRaw('YEAR(sales.sold_at), MONTH(sales.sold_at)')
-            ->orderByRaw('YEAR(sales.sold_at), MONTH(sales.sold_at)')
+            ->groupByRaw($yearExpression.', '.$monthExpression)
+            ->orderByRaw('year, month')
             ->get()
             ->keyBy(fn ($row) => sprintf('%04d-%02d', $row->year, $row->month));
 
