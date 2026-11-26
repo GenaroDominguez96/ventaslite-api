@@ -26,7 +26,7 @@ class ReportController extends Controller
             ->selectRaw('CAST(COALESCE(AVG(sales.total), 0) AS DECIMAL(14,2)) AS average_ticket')
             ->first();
 
-        $days = $filters['date_from']->diffInDays($filters['date_to']) + 1;
+        $days = (int) $filters['date_from']->diffInDays($filters['date_to']) + 1;
         $previousFilters = $filters;
         $previousFilters['date_from'] = $filters['date_from']->copy()->subDays($days);
         $previousFilters['date_to'] = $filters['date_from']->copy()->subSecond();
