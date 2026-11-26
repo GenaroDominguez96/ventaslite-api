@@ -68,6 +68,7 @@ class ReportAssistantTest extends TestCase
                 && $request->hasHeader('Authorization', 'Bearer test-api-key')
                 && str_contains((string) $request['input'], 'indicadores')
                 && str_contains((string) $request['input'], 'ventas_por_mes')
+                && str_contains((string) $request['input'], 'top_10_productos_por_importe')
                 && ! str_contains((string) $request['input'], 'SELECT ');
         });
     }
@@ -110,4 +111,28 @@ class ReportAssistantTest extends TestCase
             '2026-05-01'
         ) && str_contains((string) $request['input'], '2026-05-31'));
     }
+
+    public function test_assistant_returns_a_controlled_message_when_openai_fails(): void
+    {
+        config(['services.openai.api_key' => 'test-api-key']);
+
+        Http::fake([
+            'https://api.openai.com/v1/responses' => Http::response([
+                'error' => ['message' => 'Provider unavailable'],
+            ], 500),
+        ]);
+
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin, 'sanctum')
+            ->postJson('/api/reports/assistant', [
+                'question' => '¿Cuál fue la venta total?',
+                'date_from' => '2026-05-01',
+                'date_to' => '2026-05-31',
+            ])
+            ->assertStatus(502)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'No fue posible consultar el asistente de IA en este momento. Los reportes siguen disponibles.');
+    }
+
 }
