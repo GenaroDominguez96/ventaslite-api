@@ -19,10 +19,12 @@ class CatalogSeeder extends Seeder
             ['name' => 'Sucursal Occidente', 'city' => 'Guadalajara'],
         ];
 
-        foreach ($branches as $branch) {
+        foreach ($branches as $branchData) {
+            $branch = Branch::factory()->make($branchData);
+
             Branch::updateOrCreate(
-                ['name' => $branch['name'], 'city' => $branch['city']],
-                $branch
+                ['name' => $branch->name, 'city' => $branch->city],
+                $branch->only(['name', 'city'])
             );
         }
 
@@ -38,7 +40,12 @@ class CatalogSeeder extends Seeder
         ];
 
         foreach ($categoryNames as $name) {
-            Category::firstOrCreate(['name' => $name]);
+            $category = Category::factory()->make(['name' => $name]);
+
+            Category::firstOrCreate(
+                ['name' => $category->name],
+                $category->only(['name'])
+            );
         }
 
         $categoryIds = Category::query()->orderBy('id')->pluck('id')->all();
