@@ -135,10 +135,27 @@ El backend obtiene el precio vigente desde el catálogo, valida existencia y est
 
 Las cancelaciones se permiten únicamente al administrador. El stock se restaura en la misma transacción que cambia el estatus; una venta ya cancelada no se procesa nuevamente.
 
+## Reportes
+
+Todos los endpoints de reportes requieren autenticación Sanctum y aceptan los filtros opcionales `date_from`, `date_to` y `branch_id`. Si no se envían fechas, se utiliza por defecto el periodo de los últimos 12 meses. Los límites de fecha incluyen el día completo.
+
+| Método | Endpoint | Descripción |
+| --- | --- | --- |
+| GET | `/api/reports/dashboard` | Ventas totales, número de ventas, ticket promedio y cambio contra el periodo anterior de igual duración. |
+| GET | `/api/reports/monthly-sales` | Ventas agrupadas por mes dentro del periodo filtrado. |
+| GET | `/api/reports/top-products` | Top 10 por unidades o importe; acepta `by=units` o `by=amount`. |
+| GET | `/api/reports/sellers` | Total vendido, número de ventas y ticket promedio por vendedor. |
+| GET | `/api/reports/branch-category` | Tabla cruzada de importe por sucursal y categoría. |
+| GET | `/api/reports/margins` | Utilidad bruta por categoría: `(unit_price - products.cost) * quantity`. |
+
+Para exportar cualquiera de los seis reportes a CSV se utiliza `GET /api/reports/{report}/export`, donde `report` puede ser `dashboard`, `monthly-sales`, `top-products`, `sellers`, `branch-category` o `margins`. La exportación acepta los mismos filtros; para el top de productos también acepta `by`.
+
+Las agregaciones se ejecutan en SQL. Todos los reportes excluyen ventas con estatus `cancelada`. Si el usuario autenticado tiene rol `vendedor`, la API aplica además un filtro obligatorio por su propio `user_id`; el rol `admin` consulta el consolidado.
+
 ## Configuración CORS
 
 La variable `CORS_ALLOWED_ORIGINS` en `.env` define los orígenes permitidos para el frontend. Por defecto está configurada para Vite en `http://localhost:5173`.
 
 ## Estado del proyecto
 
-La autenticación y la base de datos inicial con datos de demostración están preparadas. Las funcionalidades de ventas, reportes y asistente de IA se desarrollarán sobre este modelo de datos.
+La autenticación y la base de datos inicial con datos de demostración están preparadas. Las funcionalidades de autenticación, catálogos, ventas y los seis reportes con exportación CSV están implementados. El asistente de IA y el despliegue público siguen pendientes.
