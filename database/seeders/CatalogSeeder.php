@@ -24,7 +24,7 @@ class CatalogSeeder extends Seeder
 
             Branch::updateOrCreate(
                 ['name' => $branch->name, 'city' => $branch->city],
-                $branch->only(['name', 'city'])
+                ['name' => $branch->name, 'city' => $branch->city]
             );
         }
 
@@ -42,10 +42,7 @@ class CatalogSeeder extends Seeder
         foreach ($categoryNames as $name) {
             $category = Category::factory()->make(['name' => $name]);
 
-            Category::firstOrCreate(
-                ['name' => $category->name],
-                $category->only(['name'])
-            );
+            Category::firstOrCreate(['name' => $category->name]);
         }
 
         $categoryIds = Category::query()->orderBy('id')->pluck('id')->all();
@@ -59,14 +56,14 @@ class CatalogSeeder extends Seeder
 
             Product::updateOrCreate(
                 ['sku' => $product->sku],
-                $product->only([
-                    'name',
-                    'category_id',
-                    'price',
-                    'cost',
-                    'stock',
-                    'active',
-                ])
+                [
+                    'name' => $product->name,
+                    'category_id' => $product->category_id,
+                    'price' => $product->price,
+                    'cost' => $product->cost,
+                    'stock' => $product->stock,
+                    'active' => $product->active,
+                ]
             );
         }
 
@@ -81,7 +78,11 @@ class CatalogSeeder extends Seeder
 
             User::updateOrCreate(
                 ['email' => $email],
-                $user->only(['name', 'password', 'role'])
+                [
+                    'name' => $user->name,
+                    'password' => $user->password,
+                    'role' => $user->role,
+                ]
             );
         }
     }
