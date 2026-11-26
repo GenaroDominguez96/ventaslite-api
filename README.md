@@ -1,80 +1,101 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# VentasLite API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+API REST de VentasLite construida con Laravel 13, PHP 8.3, MySQL 8 y Laravel Sanctum.
 
-## About Laravel
+## Requisitos
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- PHP 8.3
+- Composer
+- MySQL 8
+- Extensiones PHP requeridas por Laravel y PDO MySQL
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Instalación local
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+1. Crear una base de datos MySQL llamada `ventaslite`.
+2. Instalar dependencias y preparar el entorno:
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+cp .env.example .env
+php artisan key:generate
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+3. Confirmar en `.env` los datos de conexión de MySQL.
+4. Crear las tablas y cargar los datos de demostración:
 
-## Contributing
+```bash
+php artisan migrate:fresh --seed
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+5. Iniciar la API:
 
-## Code of Conduct
+```bash
+php artisan serve
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+La API queda disponible por defecto en `http://localhost:8000`.
 
-## Security Vulnerabilities
+En Windows se puede copiar `.env.example` como `.env` desde el Explorador o con PowerShell (`Copy-Item .env.example .env`).
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Modelo de datos
 
-## License
+Las migraciones crean las tablas requeridas para la prueba:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- `users`: cuentas con rol `admin` o `vendedor`.
+- `branches`: sucursales y ciudad.
+- `categories`: categorías de productos.
+- `products`: SKU, categoría, precio, costo, existencias y estado activo.
+- `sales`: folio, vendedor, sucursal, importes, forma de pago, estatus y fecha.
+- `sale_items`: productos y cantidades de cada venta, conservando el precio unitario histórico.
 
+Las llaves foráneas e índices se definen en las migraciones. Los importes usan `DECIMAL(12,2)`; el IVA de las ventas de demostración es del 16 %. Los renglones guardan el precio vendido, independiente de cambios futuros al precio del catálogo.
 
-## Autenticación
+## Datos de demostración
 
-La API utiliza Laravel Sanctum con tokens Bearer para los clientes SPA/API.
+`php artisan migrate:fresh --seed` genera:
 
-### Endpoints
+| Registro | Cantidad |
+| --- | ---: |
+| Administrador | 1 |
+| Vendedores | 8 |
+| Sucursales en México | 4 |
+| Categorías | 8 |
+| Productos | 150 |
+| Ventas | 2,500 |
+| Partidas de venta | 7,500 |
 
-- `POST /api/login`: valida credenciales y entrega un token.
-- `POST /api/logout`: revoca el token actual.
-- `GET /api/me`: devuelve el usuario autenticado.
+Los datos se generan con factories y Faker en locale `es_MX`. Las ventas cubren los últimos 18 meses, aproximadamente 5 % se marcan como canceladas, diciembre tiene una mayor concentración de ventas y una sucursal tiene una participación menor. Los catálogos y usuarios se actualizan por claves únicas; las ventas de demostración se cargan dentro de una transacción y no se duplican al volver a ejecutar los seeders.
 
-Las respuestas exitosas usan el sobre `success`, `message`, `data` y `meta`. Los intentos fallidos de inicio de sesión se limitan a cinco por combinación de correo e IP durante un minuto.
+### Credenciales de desarrollo
 
-### Usuario administrador de desarrollo
-
-Después de ejecutar las migraciones y seeders:
+Administrador:
 
 - Correo: `admin@ventaslite.test`
 - Contraseña: `password`
 
+Vendedores:
+
+- Correos: `vendedor01@ventaslite.test` a `vendedor08@ventaslite.test`
+- Contraseña: `password`
+
 Estas credenciales son exclusivamente para desarrollo y demostración.
+
+## Autenticación
+
+La API utiliza Laravel Sanctum con tokens Bearer.
+
+| Método | Endpoint | Descripción |
+| --- | --- | --- |
+| POST | `/api/login` | Valida credenciales y entrega un token. |
+| POST | `/api/logout` | Revoca el token actual. |
+| GET | `/api/me` | Devuelve el usuario autenticado. |
+
+Las respuestas exitosas usan el sobre `success`, `message`, `data` y `meta`. Los intentos fallidos de inicio de sesión se limitan a cinco por combinación de correo e IP durante un minuto.
+
+## Configuración CORS
+
+La variable `CORS_ALLOWED_ORIGINS` en `.env` define los orígenes permitidos para el frontend. Por defecto está configurada para Vite en `http://localhost:5173`.
+
+## Estado del proyecto
+
+La autenticación y la base de datos inicial con datos de demostración están preparadas. Las funcionalidades de ventas, reportes y asistente de IA se desarrollarán sobre este modelo de datos.
