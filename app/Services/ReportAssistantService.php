@@ -54,8 +54,7 @@ class ReportAssistantService
             ->filter(fn (array $content) => ($content['type'] ?? null) === 'output_text')
             ->pluck('text')
             ->filter(fn ($text) => is_string($text) && trim($text) !== '')
-            ->implode("
-");
+            ->implode(PHP_EOL);
 
         if (trim($answer) === '') {
             throw new RuntimeException('OpenAI returned an empty response.');
