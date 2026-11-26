@@ -100,8 +100,7 @@ Estos endpoints requieren autenticación:
 | Método | Endpoint | Descripción |
 | --- | --- | --- |
 | GET | `/api/branches` | Lista sucursales disponibles. |
-| GET | `/api/categories` | Lista categorías. |
-| GET | `/api/products` | Lista productos activos con existencias; acepta `search` y `category_id`. |
+| GET | `/api/products` | Lista productos activos con existencias. |
 | GET | `/api/sellers` | Lista vendedores para filtros (solo admin). |
 
 ## Ventas
@@ -147,6 +146,8 @@ Todos los endpoints de reportes requieren autenticación Sanctum y aceptan los f
 | GET | `/api/reports/sellers` | Total vendido, número de ventas y ticket promedio por vendedor. |
 | GET | `/api/reports/branch-category` | Tabla cruzada de importe por sucursal y categoría. |
 | GET | `/api/reports/margins` | Utilidad bruta por categoría: `(unit_price - products.cost) * quantity`. |
+| POST | `/api/reports/assistant` | Responde preguntas en español con datos agregados del periodo. Requiere `question`. |
+| POST | `/api/reports/executive-summary` | Genera un resumen ejecutivo del periodo filtrado. |
 
 Para exportar cualquiera de los seis reportes a CSV se utiliza `GET /api/reports/{report}/export`, donde `report` puede ser `dashboard`, `monthly-sales`, `top-products`, `sellers`, `branch-category` o `margins`. La exportación acepta los mismos filtros; para el top de productos también acepta `by`.
 
@@ -154,10 +155,22 @@ Los importes por producto y la matriz sucursal × categoría suman `sale_items.l
 
 Las agregaciones se ejecutan en SQL. Todos los reportes excluyen ventas con estatus `cancelada`. Si el usuario autenticado tiene rol `vendedor`, la API aplica además un filtro obligatorio por su propio `user_id`; el rol `admin` consulta el consolidado.
 
+## Asistente de IA
+
+El asistente y el resumen ejecutivo usan los mismos filtros `date_from`, `date_to` y `branch_id` de los reportes. El backend construye el contexto con indicadores y reportes agregados (ventas mensuales, top de productos por unidades e importe, ranking de vendedores, matriz sucursal × categoría y utilidad bruta); no envía el listado completo de ventas ni permite al modelo generar o ejecutar SQL.
+
+Configura la integración únicamente en el backend:
+
+- `OPENAI_API_KEY`: clave privada de API.
+- `OPENAI_MODEL`: modelo de OpenAI (por defecto `gpt-6-luna`).
+- `OPENAI_TIMEOUT`: tiempo máximo de espera en segundos (por defecto 30).
+
+Cuando no existe la clave o el proveedor falla, la API devuelve un mensaje de error controlado y los endpoints de reportes siguen disponibles. No agregues la clave al frontend ni a variables `VITE_*`.
+
 ## Configuración CORS
 
 La variable `CORS_ALLOWED_ORIGINS` en `.env` define los orígenes permitidos para el frontend. Por defecto está configurada para Vite en `http://localhost:5173`.
 
 ## Estado del proyecto
 
-Están implementados la autenticación, los catálogos, las operaciones de ventas y los seis reportes con agregaciones SQL y exportación CSV. El asistente de IA y el despliegue público siguen pendientes.
+Están implementados la autenticación, los catálogos, las operaciones de ventas, los seis reportes con agregaciones SQL y exportación CSV, el asistente de IA y el resumen ejecutivo. El despliegue público y los entregables visuales y de demostración siguen pendientes.
