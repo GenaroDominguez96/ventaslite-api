@@ -25,8 +25,8 @@ return [
 
     'ai' => [
         'provider' => env('AI_PROVIDER', 'gemini'),
-        'timeout' => env('AI_TIMEOUT', 30),
-        'max_output_tokens' => env('AI_MAX_OUTPUT_TOKENS', 650),
+        'timeout' => env('AI_TIMEOUT', 60),
+        'max_output_tokens' => env('AI_MAX_OUTPUT_TOKENS', 1200),
     ],
 
     'gemini' => [
