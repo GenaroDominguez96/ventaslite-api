@@ -103,9 +103,11 @@ class ReportAssistantTest extends TestCase
             ->assertJsonPath('data.answer', 'Resumen generado con Gemini.');
 
         Http::assertSent(fn ($request): bool =>
-            str_contains($request->url(), 'models/gemini-3.8-flash:generateContent')
-            && str_contains($request->url(), 'key=test-gemini-key')
+            $request->url() === 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent'
+            && $request->hasHeader('x-goog-api-key', 'test-gemini-key')
             && str_contains((string) $request['contents'][0]['parts'][0]['text'], 'indicadores')
+            && ($request['generationConfig']['thinkingConfig']['thinkingLevel'] ?? null) === 'LOW'
+            && ! array_key_exists('temperature', $request['generationConfig'])
         );
     }
 
