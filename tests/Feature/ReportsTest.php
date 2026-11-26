@@ -117,6 +117,30 @@ class ReportsTest extends TestCase
         $this->assertStringContainsString('.csv', $response->headers->get('content-disposition'));
     }
 
+    public function test_csv_export_is_available_for_each_report(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $branch = Branch::factory()->create();
+
+        $reports = [
+            'dashboard',
+            'monthly-sales',
+            'top-products',
+            'sellers',
+            'branch-category',
+            'margins',
+        ];
+
+        foreach ($reports as $report) {
+            $response = $this->actingAs($admin, 'sanctum')->get(
+                '/api/reports/'.$report.'/export?date_from=2026-05-01&date_to=2026-05-31&branch_id='.$branch->id
+            );
+
+            $response->assertOk();
+            $this->assertStringContainsString('text/csv', $response->headers->get('content-type'));
+        }
+    }
+
     private function createSale(
         User $vendor,
         Branch $branch,
