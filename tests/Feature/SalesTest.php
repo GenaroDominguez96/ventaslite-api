@@ -91,6 +91,8 @@ class SalesTest extends TestCase
         $category = Category::factory()->create();
         $product = Product::factory()->create([
             'category_id' => $category->id,
+            'price' => '60.00',
+            'cost' => '30.00',
             'stock' => 6,
         ]);
 
