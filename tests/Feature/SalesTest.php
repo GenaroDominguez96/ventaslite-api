@@ -133,4 +133,40 @@ class SalesTest extends TestCase
             ->postJson('/api/sales/'.$sale->id.'/cancel')
             ->assertStatus(409);
     }
+    public function test_admin_can_filter_sales_by_date_branch_seller_and_status(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $vendor = User::factory()->create(['role' => 'vendedor']);
+        $otherVendor = User::factory()->create(['role' => 'vendedor']);
+        $branch = Branch::factory()->create();
+        $otherBranch = Branch::factory()->create();
+
+        $matchingSale = Sale::factory()->create([
+            'user_id' => $vendor->id,
+            'branch_id' => $branch->id,
+            'status' => 'pagada',
+            'sold_at' => '2026-05-10 12:00:00',
+        ]);
+
+        Sale::factory()->create([
+            'user_id' => $otherVendor->id,
+            'branch_id' => $otherBranch->id,
+            'status' => 'cancelada',
+            'sold_at' => '2026-05-10 12:00:00',
+        ]);
+
+        Sale::factory()->create([
+            'user_id' => $vendor->id,
+            'branch_id' => $branch->id,
+            'status' => 'pagada',
+            'sold_at' => '2026-06-10 12:00:00',
+        ]);
+
+        $this->actingAs($admin, 'sanctum')
+            ->getJson('/api/sales?date_from=2026-05-01&date_to=2026-05-31&branch_id='.$branch->id.'&seller_id='.$vendor->id.'&status=pagada')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $matchingSale->id);
+    }
+
 }
