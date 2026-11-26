@@ -68,11 +68,11 @@ class CatalogSeeder extends Seeder
         }
 
         for ($index = 1; $index <= 8; $index++) {
-            $email = sprintf('vendedor%02d@ventaslite.test', $index);
+            $email = sprintf('vendedor%01d@ventaslite.com', $index);
             $user = User::factory()->make([
                 'name' => fake('es_MX')->name(),
                 'email' => $email,
-                'password' => 'password',
+                'password' => 'contraseña',
                 'role' => 'vendedor',
             ]);
 

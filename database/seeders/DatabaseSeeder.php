@@ -13,10 +13,10 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         User::updateOrCreate(
-            ['email' => 'admin@ventaslite.test'],
+            ['email' => 'admin@ventaslite.com'],
             [
                 'name' => 'Administrador',
-                'password' => 'password',
+                'password' => 'contraseña',
                 'role' => 'admin',
             ]
         );

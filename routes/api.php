@@ -1,11 +1,11 @@
 <?php
 
-use App\\Http\\Controllers\\Api\\AuthController;
-use App\\Http\\Controllers\\Api\\CatalogController;
-use App\\Http\\Controllers\\Api\\ReportAssistantController;
-use App\\Http\\Controllers\\Api\\ReportController;
-use App\\Http\\Controllers\\Api\\SaleController;
-use Illuminate\\Support\\Facades\\Route;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CatalogController;
+use App\Http\Controllers\Api\ReportAssistantController;
+use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\SaleController;
+use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
 
