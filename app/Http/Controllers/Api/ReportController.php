@@ -226,25 +226,27 @@ class ReportController extends Controller
         });
 
         $matrix = [];
-        foreach ($branches as $branch) {
-            $categoryValues = [];
-            foreach ($categories as $category) {
-                $match = $aggregates->first(
-                    fn ($row) => (int) $row->branch_id === (int) $branch->id
-                        && (int) $row->category_id === (int) $category->id
-                );
+        if ($aggregates->isNotEmpty()) {
+            foreach ($branches as $branch) {
+                $categoryValues = [];
+                foreach ($categories as $category) {
+                    $match = $aggregates->first(
+                        fn ($row) => (int) $row->branch_id === (int) $branch->id
+                            && (int) $row->category_id === (int) $category->id
+                    );
 
-                $categoryValues[(string) $category->id] = $match?->total ?? '0.00';
+                    $categoryValues[(string) $category->id] = $match?->total ?? '0.00';
+                }
+
+                $matrix[] = [
+                    'branch_id' => $branch->id,
+                    'branch_name' => $branch->name,
+                    'categories' => $categoryValues,
+                    'total' => $this->centsToDecimal($aggregates
+                        ->where('branch_id', $branch->id)
+                        ->sum(fn ($row) => $this->decimalToCents($row->total))),
+                ];
             }
-
-            $matrix[] = [
-                'branch_id' => $branch->id,
-                'branch_name' => $branch->name,
-                'categories' => $categoryValues,
-                'total' => $this->centsToDecimal($aggregates
-                    ->where('branch_id', $branch->id)
-                    ->sum(fn ($row) => $this->decimalToCents($row->total))),
-            ];
         }
 
         return $this->success([
