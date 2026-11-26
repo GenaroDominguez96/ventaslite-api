@@ -169,4 +169,33 @@ class SalesTest extends TestCase
             ->assertJsonPath('data.0.id', $matchingSale->id);
     }
 
+    public function test_sales_list_is_paginated_with_twenty_records_per_page(): void
+    {
+        $vendor = User::factory()->create(['role' => 'vendedor']);
+        $branch = Branch::factory()->create();
+
+        Sale::factory()->count(21)->create([
+            'user_id' => $vendor->id,
+            'branch_id' => $branch->id,
+        ]);
+
+        $this->actingAs($vendor, 'sanctum')
+            ->getJson('/api/sales')
+            ->assertOk()
+            ->assertJsonCount(20, 'data')
+            ->assertJsonPath('meta.pagination.per_page', 20)
+            ->assertJsonPath('meta.pagination.total', 21)
+            ->assertJsonPath('meta.pagination.last_page', 2);
+    }
+
+    public function test_sales_list_rejects_an_invalid_date_range(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin, 'sanctum')
+            ->getJson('/api/sales?date_from=2026-05-31&date_to=2026-05-01')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('date_to');
+    }
+
 }
