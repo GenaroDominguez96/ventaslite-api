@@ -92,6 +92,17 @@ La API utiliza Laravel Sanctum con tokens Bearer.
 
 Las respuestas exitosas usan el sobre `success`, `message`, `data` y `meta`. Los intentos fallidos de inicio de sesión se limitan a cinco por combinación de correo e IP durante un minuto.
 
+## Catálogos
+
+Estos endpoints requieren autenticación:
+
+| Método | Endpoint | Descripción |
+| --- | --- | --- |
+| GET | `/api/branches` | Lista sucursales disponibles. |
+| GET | `/api/categories` | Lista categorías. |
+| GET | `/api/products` | Lista productos activos con existencias; acepta `search` y `category_id`. |
+| GET | `/api/sellers` | Lista vendedores para filtros (solo admin). |
+
 ## Ventas
 
 Todos los endpoints de ventas requieren el encabezado `Authorization: Bearer {token}` obtenido en `POST /api/login`.
