@@ -99,10 +99,35 @@ class ReportsTest extends TestCase
             ->assertJsonPath('data.sales_count', 1)
             ->assertJsonPath('data.sales_total', $ownSale->total);
 
+        $filters = '?date_from=2026-05-01&date_to=2026-05-31';
+
         $this->actingAs($vendor, 'sanctum')
-            ->getJson('/api/reports/top-products?date_from=2026-05-01&date_to=2026-05-31')
+            ->getJson('/api/reports/monthly-sales'.$filters)
+            ->assertOk()
+            ->assertJsonPath('data.0.total', '116.00')
+            ->assertJsonPath('data.0.sales_count', 1);
+
+        $this->actingAs($vendor, 'sanctum')
+            ->getJson('/api/reports/top-products'.$filters)
             ->assertOk()
             ->assertJsonPath('data.0.units_sold', 1);
+
+        $this->actingAs($vendor, 'sanctum')
+            ->getJson('/api/reports/sellers'.$filters)
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.seller_id', $vendor->id);
+
+        $this->actingAs($vendor, 'sanctum')
+            ->getJson('/api/reports/branch-category'.$filters)
+            ->assertOk()
+            ->assertJsonPath('data.rows.0.categories.'.$category->id, '100.00');
+
+        $this->actingAs($vendor, 'sanctum')
+            ->getJson('/api/reports/margins'.$filters)
+            ->assertOk()
+            ->assertJsonPath('data.0.units_sold', 1)
+            ->assertJsonPath('data.0.gross_profit', '40.00');
     }
 
     public function test_report_csv_export_is_available(): void
