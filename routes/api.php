@@ -1,10 +1,11 @@
 <?php
 
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\CatalogController;
-use App\Http\Controllers\Api\SaleController;
-use App\Http\Controllers\Api\ReportController;
-use Illuminate\Support\Facades\Route;
+use App\\Http\\Controllers\\Api\\AuthController;
+use App\\Http\\Controllers\\Api\\CatalogController;
+use App\\Http\\Controllers\\Api\\ReportAssistantController;
+use App\\Http\\Controllers\\Api\\ReportController;
+use App\\Http\\Controllers\\Api\\SaleController;
+use Illuminate\\Support\\Facades\\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -28,4 +29,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reports/branch-category', [ReportController::class, 'branchCategory']);
     Route::get('/reports/margins', [ReportController::class, 'margins']);
     Route::get('/reports/{report}/export', [ReportController::class, 'export']);
+
+    Route::post('/reports/assistant', [ReportAssistantController::class, 'ask']);
+    Route::post('/reports/executive-summary', [ReportAssistantController::class, 'executiveSummary']);
 });
