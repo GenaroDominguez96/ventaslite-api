@@ -2,6 +2,11 @@
 
 API REST de VentasLite construida con Laravel 13, PHP 8.3, MySQL 8 y Laravel Sanctum.
 
+## URLs públicas
+
+- **Frontend:** https://ventaslite-web-production.up.railway.app
+- **Backend API:** https://ventaslite-api-production.up.railway.app/
+
 ## Requisitos
 
 - PHP 8.3
@@ -177,4 +182,4 @@ La variable `CORS_ALLOWED_ORIGINS` en `.env` define los orígenes permitidos par
 
 ## Estado del proyecto
 
-Están implementados la autenticación, los catálogos, las operaciones de ventas, los seis reportes con agregaciones SQL y exportación CSV, el asistente de IA y el resumen ejecutivo. El despliegue público y los entregables visuales y de demostración siguen pendientes.
+Están implementados la autenticación, los catálogos, las operaciones de ventas, los seis reportes con agregaciones SQL y exportación CSV, el asistente de IA y el resumen ejecutivo. La aplicación está publicada en las URLs indicadas arriba; las capturas y el video demostrativo siguen pendientes.
