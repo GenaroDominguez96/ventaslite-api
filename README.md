@@ -155,6 +155,10 @@ Los importes por producto y la matriz sucursal × categoría suman `sale_items.l
 
 Las agregaciones se ejecutan en SQL. Todos los reportes excluyen ventas con estatus `cancelada`. Si el usuario autenticado tiene rol `vendedor`, la API aplica además un filtro obligatorio por su propio `user_id`; el rol `admin` consulta el consolidado.
 
+## Bitácora del uso de IA
+
+La bitácora que documenta los momentos principales de asistencia de IA para los dos repositorios está en el [AI_LOG.md del repositorio frontend](https://github.com/GenaroDominguez96/ventaslite-web/blob/main/AI_LOG.md).
+
 ## Asistente de IA
 
 El asistente y el resumen ejecutivo usan los mismos filtros `date_from`, `date_to` y `branch_id` de los reportes. El backend construye el contexto con indicadores y reportes agregados (ventas mensuales, top de productos por unidades e importe, ranking de vendedores, matriz sucursal × categoría y utilidad bruta); no envía el listado completo de ventas ni permite al modelo generar o ejecutar SQL.
