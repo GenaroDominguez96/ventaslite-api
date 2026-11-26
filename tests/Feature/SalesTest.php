@@ -32,7 +32,7 @@ class SalesTest extends TestCase
         ]);
 
         $this->actingAs($vendor, 'sanctum')
-            ->getJson('/api/sales')
+            ->getJson('/api/sales?seller_id='.$otherVendor->id)
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $ownSale->id);
