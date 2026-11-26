@@ -51,10 +51,10 @@ class ReportAssistantController extends Controller
         string $prompt,
         string $message
     ): JsonResponse {
-        if (! config('services.openai.api_key')) {
+        if (! $assistant->isConfigured()) {
             return response()->json([
                 'success' => false,
-                'message' => 'El asistente de IA no está configurado. Agrega OPENAI_API_KEY en el archivo .env del backend. Los reportes siguen disponibles.',
+                'message' => 'El asistente de IA no está configurado. Configura la API key del proveedor seleccionado en las variables del backend. Los reportes siguen disponibles.',
                 'data' => null,
             ], 503);
         }
