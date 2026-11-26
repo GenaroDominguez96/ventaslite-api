@@ -7,6 +7,7 @@ API REST de VentasLite construida con Laravel 13, PHP 8.3, MySQL 8 y Laravel San
 - PHP 8.3
 - Composer
 - MySQL 8
+- Zona horaria de aplicación: `America/Mexico_City` (configurable con `APP_TIMEZONE`).
 - Extensiones PHP requeridas por Laravel y PDO MySQL
 
 ## Instalación local
