@@ -1,9 +1,9 @@
 <?php
 
-namespace App\\Services;
+namespace App\Services;
 
-use Illuminate\\Support\\Facades\\Http;
-use Illuminate\\Support\\Facades\\Log;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 class ReportAssistantService
@@ -54,7 +54,8 @@ class ReportAssistantService
             ->filter(fn (array $content) => ($content['type'] ?? null) === 'output_text')
             ->pluck('text')
             ->filter(fn ($text) => is_string($text) && trim($text) !== '')
-            ->implode("\n");
+            ->implode("
+");
 
         if (trim($answer) === '') {
             throw new RuntimeException('OpenAI returned an empty response.');
