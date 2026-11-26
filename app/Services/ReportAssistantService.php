@@ -2,12 +2,10 @@
 
 namespace App\Services;
 
-use Illuminate\Http\Client\PendingRequest;
-use Illuminate\Http\Client\RequestException;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
-use Throwable;
 
 class ReportAssistantService
 {
@@ -50,71 +48,106 @@ class ReportAssistantService
 
     private function generateWithGemini(string $apiKey, array $payload): string
     {
-        $model = (string) config('services.gemini.model', 'gemini-3.8-flash');
-        $response = Http::withHeaders([
-                'x-goog-api-key' => $apiKey,
-            ])
-            ->acceptJson()
-            ->timeout((int) config('services.ai.timeout', 60))
-            ->retry(
-                2,
-                1500,
-                fn (Throwable $exception, PendingRequest $request): bool =>
-                    $exception instanceof RequestException
-                    && $exception->response->status() === 503
-            )
-            ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent", [
-                'systemInstruction' => [
-                    'parts' => [['text' => self::INSTRUCTIONS]],
-                ],
-                'contents' => [[
-                    'role' => 'user',
-                    'parts' => [[
-                        'text' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
-                    ]],
-                ]],
-                'generationConfig' => [
-                    'maxOutputTokens' => (int) config('services.ai.max_output_tokens', 1200),
-                    'thinkingConfig' => [
-                        'thinkingLevel' => 'LOW',
-                    ],
-                ],
-            ]);
+        $primaryModel = (string) config('services.gemini.model', 'gemini-3.5-flash-lite');
+        $fallbackModel = (string) config('services.gemini.fallback_model', 'gemini-3.8-flash');
 
-        if (! $response->successful()) {
-            $providerMessage = $response->json('error.message', 'No se recibió detalle del proveedor.');
-
-            Log::warning('Gemini rechazó la solicitud del asistente de reportes.', [
-                'status' => $response->status(),
-                'provider_message' => $providerMessage,
-            ]);
-
-            throw new RuntimeException(
-                'Gemini respondió HTTP '.$response->status().': '.$providerMessage
-            );
+        // Si ambos modelos quedaron configurados iguales, usa el otro modelo como respaldo.
+        if ($fallbackModel === '' || $fallbackModel === $primaryModel) {
+            $fallbackModel = $primaryModel === 'gemini-3.5-flash-lite'
+                ? 'gemini-3.8-flash'
+                : 'gemini-3.5-flash-lite';
         }
 
-        $answer = collect($response->json('candidates', []))
-            ->flatMap(fn (array $candidate) => $candidate['content']['parts'] ?? [])
-            ->pluck('text')
-            ->filter(fn ($text) => is_string($text) && trim($text) !== '')
-            ->implode(PHP_EOL);
+        $models = array_values(array_unique([$primaryModel, $fallbackModel]));
+        $timeout = (int) config('services.ai.timeout', 12);
 
-        if (trim($answer) === '') {
-            $finishReason = collect($response->json('candidates', []))
-                ->pluck('finishReason')
-                ->filter()
-                ->implode(', ');
-            $blockReason = $response->json('promptFeedback.blockReason');
+        foreach ($models as $index => $model) {
+            try {
+                $response = Http::withHeaders([
+                        'x-goog-api-key' => $apiKey,
+                    ])
+                    ->acceptJson()
+                    ->timeout($timeout)
+                    ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent", [
+                        'systemInstruction' => [
+                            'parts' => [['text' => self::INSTRUCTIONS]],
+                        ],
+                        'contents' => [[
+                            'role' => 'user',
+                            'parts' => [[
+                                'text' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                            ]],
+                        ]],
+                        'generationConfig' => [
+                            'maxOutputTokens' => (int) config('services.ai.max_output_tokens', 800),
+                            'thinkingConfig' => [
+                                'thinkingLevel' => str_contains($model, 'flash-lite') ? 'MINIMAL' : 'LOW',
+                            ],
+                        ],
+                    ]);
+            } catch (ConnectionException $exception) {
+                Log::warning('Gemini agotó el tiempo de espera.', [
+                    'model' => $model,
+                    'timeout_seconds' => $timeout,
+                    'using_fallback' => isset($models[$index + 1]),
+                ]);
 
-            throw new RuntimeException(sprintf(
-                'Gemini no devolvió texto. finishReason=%s; blockReason=%s',
-                $finishReason !== '' ? $finishReason : 'sin candidato',
-                $blockReason ?: 'ninguno'
-            ));
+                if (isset($models[$index + 1])) {
+                    continue;
+                }
+
+                throw new RuntimeException(
+                    'Gemini no respondió dentro del tiempo límite de '.$timeout.' segundos.',
+                    0,
+                    $exception
+                );
+            }
+
+            if (! $response->successful()) {
+                $status = $response->status();
+                $providerMessage = $response->json('error.message', 'No se recibió detalle del proveedor.');
+                $isTransient = in_array($status, [500, 502, 503, 504], true);
+
+                Log::warning('Gemini rechazó la solicitud del asistente de reportes.', [
+                    'model' => $model,
+                    'status' => $status,
+                    'provider_message' => $providerMessage,
+                    'using_fallback' => $isTransient && isset($models[$index + 1]),
+                ]);
+
+                if ($isTransient && isset($models[$index + 1])) {
+                    continue;
+                }
+
+                throw new RuntimeException(
+                    'Gemini respondió HTTP '.$status.': '.$providerMessage
+                );
+            }
+
+            $answer = collect($response->json('candidates', []))
+                ->flatMap(fn (array $candidate) => $candidate['content']['parts'] ?? [])
+                ->pluck('text')
+                ->filter(fn ($text) => is_string($text) && trim($text) !== '')
+                ->implode(PHP_EOL);
+
+            if (trim($answer) === '') {
+                $finishReason = collect($response->json('candidates', []))
+                    ->pluck('finishReason')
+                    ->filter()
+                    ->implode(', ');
+                $blockReason = $response->json('promptFeedback.blockReason');
+
+                throw new RuntimeException(sprintf(
+                    'Gemini no devolvió texto. finishReason=%s; blockReason=%s',
+                    $finishReason !== '' ? $finishReason : 'sin candidato',
+                    $blockReason ?: 'ninguno'
+                ));
+            }
+
+            return trim($answer);
         }
 
-        return trim($answer);
+        throw new RuntimeException('No fue posible obtener una respuesta de los modelos Gemini configurados.');
     }
 
     private function generateWithOpenAI(string $apiKey, array $payload): string
