@@ -78,6 +78,29 @@ class ReportsTest extends TestCase
         $this->assertDatabaseHas('sales', ['id' => $paidSale->id, 'status' => 'pagada']);
     }
 
+    public function test_dashboard_compares_with_previous_period_of_equal_duration(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $vendor = User::factory()->create(['role' => 'vendedor']);
+        $branch = Branch::factory()->create();
+        $category = Category::factory()->create();
+        $product = Product::factory()->create([
+            'category_id' => $category->id,
+            'price' => '100.00',
+            'cost' => '60.00',
+        ]);
+
+        $this->createSale($vendor, $branch, $product, 'pagada', 1, '2026-04-30 12:00:00');
+        $this->createSale($vendor, $branch, $product, 'pagada', 2, '2026-05-01 12:00:00');
+
+        $this->actingAs($admin, 'sanctum')
+            ->getJson('/api/reports/dashboard?date_from=2026-05-01&date_to=2026-05-02&branch_id='.$branch->id)
+            ->assertOk()
+            ->assertJsonPath('data.sales_total', '232.00')
+            ->assertJsonPath('data.previous_sales_total', '116.00')
+            ->assertJsonPath('data.change_percentage', 100);
+    }
+
     public function test_salesperson_reports_include_only_their_own_sales(): void
     {
         $vendor = User::factory()->create(['role' => 'vendedor']);
