@@ -88,6 +88,9 @@ class ReportAssistantController extends Controller
         $dashboard = $reports->dashboard($request)->getData(true);
         $monthlySales = $reports->monthlySales($request)->getData(true);
         $topProducts = $reports->topProducts($request)->getData(true);
+        $amountProductsRequest = Request::createFrom($request);
+        $amountProductsRequest->query->set('by', 'amount');
+        $topProductsByAmount = $reports->topProducts($amountProductsRequest)->getData(true);
         $sellers = $reports->sellers($request)->getData(true);
         $branchCategory = $reports->branchCategory($request)->getData(true);
         $margins = $reports->margins($request)->getData(true);
@@ -97,6 +100,7 @@ class ReportAssistantController extends Controller
             'indicadores' => $dashboard['data'] ?? [],
             'ventas_por_mes' => $monthlySales['data'] ?? [],
             'top_10_productos_por_unidades' => $topProducts['data'] ?? [],
+            'top_10_productos_por_importe' => $topProductsByAmount['data'] ?? [],
             'ranking_de_vendedores' => $sellers['data'] ?? [],
             'ventas_por_sucursal_y_categoria' => $branchCategory['data'] ?? [],
             'utilidad_bruta_por_categoria' => $margins['data'] ?? [],
