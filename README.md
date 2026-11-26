@@ -81,7 +81,7 @@ Administrador:
 
 Vendedores:
 
-- Correos: `vendedor01@ventaslite.test` a `vendedor08@ventaslite.test`
+- Correos: `vendedor1@ventaslite.test` a `vendedor8@ventaslite.test`
 - Contraseña: `password`
 
 Estas credenciales son exclusivamente para desarrollo y demostración.
