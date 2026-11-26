@@ -168,11 +168,15 @@ La bitácora que documenta los momentos principales de asistencia de IA para los
 
 El asistente y el resumen ejecutivo usan los mismos filtros `date_from`, `date_to` y `branch_id` de los reportes. El backend construye el contexto con indicadores y reportes agregados (ventas mensuales, top de productos por unidades e importe, ranking de vendedores, matriz sucursal × categoría y utilidad bruta); no envía el listado completo de ventas ni permite al modelo generar o ejecutar SQL.
 
-Configura la integración únicamente en el backend:
+Configura la integración únicamente en el backend. Gemini es el proveedor predeterminado:
 
-- `OPENAI_API_KEY`: clave privada de API.
-- `OPENAI_MODEL`: modelo de OpenAI (por defecto `gpt-6-luna`).
-- `OPENAI_TIMEOUT`: tiempo máximo de espera en segundos (por defecto 30).
+- `AI_PROVIDER=gemini`: selecciona Gemini.
+- `GEMINI_API_KEY`: clave privada creada en Google AI Studio.
+- `GEMINI_MODEL=gemini-3.8-flash`: modelo utilizado.
+- `AI_TIMEOUT=60`: espera máxima del proveedor en segundos.
+- `AI_MAX_OUTPUT_TOKENS=1200`: límite de salida.
+
+Para usar OpenAI como alternativa, configura `AI_PROVIDER=openai`, `OPENAI_API_KEY` y `OPENAI_MODEL`.
 
 Cuando no existe la clave o el proveedor falla, la API devuelve un mensaje de error controlado y los endpoints de reportes siguen disponibles. No agregues la clave al frontend ni a variables `VITE_*`.
 
