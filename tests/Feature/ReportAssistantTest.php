@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -111,12 +112,13 @@ class ReportAssistantTest extends TestCase
         );
     }
 
-    public function test_gemini_retries_once_when_provider_returns_http_503(): void
+    public function test_gemini_uses_fallback_model_when_primary_returns_http_503(): void
     {
         config([
             'services.ai.provider' => 'gemini',
             'services.gemini.api_key' => 'test-gemini-key',
             'services.gemini.model' => 'gemini-3.8-flash',
+            'services.gemini.fallback_model' => 'gemini-3.5-flash-lite',
         ]);
 
         Http::fake([
@@ -127,7 +129,7 @@ class ReportAssistantTest extends TestCase
                 ->push([
                     'candidates' => [[
                         'content' => [
-                            'parts' => [['text' => 'Respuesta después del reintento.']],
+                            'parts' => [['text' => 'Respuesta después del cambio de modelo.']],
                         ],
                     ]],
                 ], 200),
@@ -143,12 +145,56 @@ class ReportAssistantTest extends TestCase
             ])
             ->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.answer', 'Respuesta después del reintento.');
+            ->assertJsonPath('data.answer', 'Respuesta después del cambio de modelo.');
+
+        Http::assertSentCount(2);
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), '/models/gemini-3.5-flash-lite:generateContent'));
+    }
+
+    public function test_gemini_uses_fallback_model_when_primary_times_out(): void
+    {
+        config([
+            'services.ai.provider' => 'gemini',
+            'services.gemini.api_key' => 'test-gemini-key',
+            'services.gemini.model' => 'gemini-3.8-flash',
+            'services.gemini.fallback_model' => 'gemini-3.5-flash-lite',
+        ]);
+
+        $attempts = 0;
+
+        Http::fake([
+            'https://generativelanguage.googleapis.com/*' => function () use (&$attempts) {
+                $attempts++;
+
+                if ($attempts === 1) {
+                    throw new ConnectionException('cURL error 28: Operation timed out.');
+                }
+
+                return Http::response([
+                    'candidates' => [[
+                        'content' => [
+                            'parts' => [['text' => 'Respuesta del modelo alternativo.']],
+                        ],
+                    ]],
+                ], 200);
+            },
+        ]);
+
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin, 'sanctum')
+            ->postJson('/api/reports/assistant', [
+                'question' => '¿Cuánto se vendió?',
+                'date_from' => '2026-05-01',
+                'date_to' => '2026-05-31',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.answer', 'Respuesta del modelo alternativo.');
 
         Http::assertSentCount(2);
     }
 
-    public function test_gemini_does_not_retry_when_provider_returns_an_error_other_than_503(): void
+    public function test_gemini_does_not_use_fallback_for_non_transient_errors(): void
     {
         config([
             'services.ai.provider' => 'gemini',
@@ -159,7 +205,7 @@ class ReportAssistantTest extends TestCase
         Http::fake([
             'https://generativelanguage.googleapis.com/*' => Http::response([
                 'error' => ['message' => 'Invalid request.'],
-            ], 500),
+            ], 400),
         ]);
 
         $admin = User::factory()->create(['role' => 'admin']);
