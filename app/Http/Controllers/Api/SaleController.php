@@ -22,12 +22,22 @@ class SaleController extends Controller
     {
         $filters = $request->validate([
             'date_from' => ['nullable', 'date'],
-            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'date_to' => ['nullable', 'date'],
             'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
             'seller_id' => ['nullable', 'integer', 'exists:users,id'],
             'status' => ['nullable', Rule::in(['pagada', 'cancelada'])],
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
+
+        if (
+            ! empty($filters['date_from'])
+            && ! empty($filters['date_to'])
+            && Carbon::parse($filters['date_to'])->lt(Carbon::parse($filters['date_from']))
+        ) {
+            throw ValidationException::withMessages([
+                'date_to' => 'La fecha final debe ser igual o posterior a la fecha inicial.',
+            ]);
+        }
 
         $query = Sale::query()
             ->with([
