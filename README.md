@@ -150,6 +150,8 @@ Todos los endpoints de reportes requieren autenticación Sanctum y aceptan los f
 
 Para exportar cualquiera de los seis reportes a CSV se utiliza `GET /api/reports/{report}/export`, donde `report` puede ser `dashboard`, `monthly-sales`, `top-products`, `sellers`, `branch-category` o `margins`. La exportación acepta los mismos filtros; para el top de productos también acepta `by`.
 
+Los importes por producto y la matriz sucursal × categoría suman `sale_items.line_total` (subtotal de partidas, antes de IVA), ya que el IVA se conserva a nivel de venta y no se distribuye entre categorías. El dashboard y el ranking utilizan `sales.total`. El margen usa el costo vigente de `products.cost` junto con el precio histórico `sale_items.unit_price`, de acuerdo con los campos definidos para la prueba.
+
 Las agregaciones se ejecutan en SQL. Todos los reportes excluyen ventas con estatus `cancelada`. Si el usuario autenticado tiene rol `vendedor`, la API aplica además un filtro obligatorio por su propio `user_id`; el rol `admin` consulta el consolidado.
 
 ## Configuración CORS
