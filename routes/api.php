@@ -20,4 +20,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/sales', [SaleController::class, 'store']);
     Route::get('/sales/{sale}', [SaleController::class, 'show']);
     Route::post('/sales/{sale}/cancel', [SaleController::class, 'cancel']);
+
+    Route::get('/reports/dashboard', [ReportController::class, 'dashboard']);
+    Route::get('/reports/monthly-sales', [ReportController::class, 'monthlySales']);
+    Route::get('/reports/top-products', [ReportController::class, 'topProducts']);
+    Route::get('/reports/sellers', [ReportController::class, 'sellers']);
+    Route::get('/reports/branch-category', [ReportController::class, 'branchCategory']);
+    Route::get('/reports/margins', [ReportController::class, 'margins']);
+    Route::get('/reports/{report}/export', [ReportController::class, 'export']);
 });
