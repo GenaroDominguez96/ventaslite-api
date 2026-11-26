@@ -105,7 +105,7 @@ class SalesTest extends TestCase
             'product_id' => $product->id,
             'quantity' => 4,
             'unit_price' => $product->price,
-            'line_total' => bcmul((string) $product->price, '4', 2),
+            'line_total' => '240.00',
         ]);
 
         $this->actingAs($vendor, 'sanctum')
