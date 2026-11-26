@@ -158,4 +158,4 @@ La variable `CORS_ALLOWED_ORIGINS` en `.env` define los orígenes permitidos par
 
 ## Estado del proyecto
 
-La autenticación y la base de datos inicial con datos de demostración están preparadas. Las funcionalidades de autenticación, catálogos, ventas y los seis reportes con exportación CSV están implementados. El asistente de IA y el despliegue público siguen pendientes.
+Están implementados la autenticación, los catálogos, las operaciones de ventas y los seis reportes con agregaciones SQL y exportación CSV. El asistente de IA y el despliegue público siguen pendientes.
